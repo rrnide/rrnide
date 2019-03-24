@@ -11,8 +11,67 @@
 # that's all, you don't have to modify any codes below
 
 module Rrnide
+  #--------------------------------------------------------------------------
+  # Debug Part
+  # Suppress some runtime errors
+  #--------------------------------------------------------------------------
+
+  FULL_ERROR = false
+
+  def self.print_error e, full=FULL_ERROR
+    puts "#{e.class}: #{e}"
+    e.backtrace.each do |c|
+      break if c.start_with?(':1:')
+      if parts = c.match(/^(?<file>.+):(?<line>\d+):in `(?<code>.*)'$/)
+        next if parts[:file] == __FILE__
+        cd = Regexp.escape(File.join(Dir.getwd, ''))
+        file = parts[:file].sub(/^#{cd}/, '')
+        if inner = file.match(/^\{(?<rgss>\d+)\}$/)
+          id = inner[:rgss].to_i
+          file = "[#{$RGSS_SCRIPTS[id][1]}]"
+        end
+        puts "   #{file} #{parts[:line]}: #{parts[:code]}"
+      else
+        puts "   #{c}"
+      end
+    end if full
+  end
+
+  SuppressedMethods = []
+
+  def self.suppress klass, meth
+    unless SuppressedMethods.include? [self, meth]
+      puts "suppress #{klass}##{meth}"
+      SuppressedMethods << [self, meth]
+      old = klass.instance_method meth
+      klass.send :define_method, meth do |*args, &blk|
+        begin
+          old.bind(self).call(*args, &blk)
+        rescue Exception => e
+          print_error e
+          nil
+        end
+      end
+    end
+  end
+
+  module Suppress # MyClass.extend Suppress
+    def method_added(meth)
+      Rrnide.suppress self, meth
+    end
+  end
+
+  CRAZY = false
+
+  ::Object.extend Suppress if CRAZY
+
+  #--------------------------------------------------------------------------
+  # HMR Part
+  # Let RM hot reload SCRIPTS_PATH/*.rb
+  # To do so, we introduce an `alias_once' method
+  #--------------------------------------------------------------------------
+
   SCRIPTS_PATH = 'Scripts'
-  VAR_RUN_PATH = File.join SCRIPTS_PATH, 'tid'
 
   def self.mkdir_p *paths
     paths.each do |path|
@@ -88,33 +147,17 @@ module Rrnide
     name
   end
 
-  FULL_ERROR = false
-
   def self.safe_load file
     load file
     true
   rescue Exception => e
-    puts "#{e.class}: #{e}"
-    e.backtrace.each do |c|
-      break if c.start_with?(':1:')
-      if parts = c.match(/^(?<file>.+):(?<line>\d+):in `(?<code>.*)'$/)
-        next if parts[:file] == __FILE__
-        cd = Regexp.escape(File.join(Dir.getwd, ''))
-        file = parts[:file].sub(/^#{cd}/, '')
-        if inner = file.match(/^\{(?<rgss>\d+)\}$/)
-          id = inner[:rgss].to_i
-          file = "[#{$RGSS_SCRIPTS[id][1]}]"
-        end
-        puts "   #{file} #{parts[:line]}: #{parts[:code]}"
-      else
-        puts "   #{c}"
-      end
-    end if FULL_ERROR
+    print_error e
     false
   end
 
-  def self.update
+  def self.update_hotreload
     installed = []
+    # reload changed files
     Dir.glob File.join(SCRIPTS_PATH, '*.rb') do |file|
       installed << file
       mtime = File.mtime(file)
@@ -128,6 +171,7 @@ module Rrnide
         PLUGINS[file] = [mtime, content]
       end
     end
+    # remove missing files
     (PLUGINS.keys - installed).each do |file|
       name = extract_name PLUGINS[file][1]
       puts "remove [#{name}]"
@@ -140,12 +184,79 @@ module Rrnide
   end
 
   class << ::Graphics
-    alias _update_without_rrnide update
+    alias _update_without_rrnide_hotreload update
     def update
-      _update_without_rrnide
-      Rrnide.update
+      _update_without_rrnide_hotreload
+      Rrnide.update_hotreload
     end
   end
 
-  update
+  update_hotreload
+
+  #--------------------------------------------------------------------------
+  # Eval(evil?) Part
+  # Ask RM to eval some code sync/async
+  # Create file.i in VAR_RUN_PATH, sync if file is 'a', otherwise async
+  # Result will be written into file.o(marshalled)/file.e(text)
+  # The client may want to delete file.{o,e} first
+  #--------------------------------------------------------------------------
+
+  VAR_RUN_PATH = 'Scripts/run'
+
+  mkdir_p VAR_RUN_PATH
+
+  TASKS = {}
+
+  def self.evil_task code, file='a'
+    ret = eval code, TOPLEVEL_BINDING
+    open File.join(VAR_RUN_PATH, "#{file}.o"), 'wb' do |f|
+      f.write Marshal.dump ret
+    end
+    TASKS.delete file
+  rescue Exception => e
+    open File.join(VAR_RUN_PATH, "#{file}.e"), 'w' do |f|
+      f.puts "#{e.class}: #{e}"
+      e.backtrace.each do |c|
+        break if c.start_with?(':1:')
+        if parts = c.match(/^(?<file>.+):(?<line>\d+):in `(?<code>.*)'$/)
+          next if parts[:file] == __FILE__
+          cd = Regexp.escape(File.join(Dir.getwd, ''))
+          file = parts[:file].sub(/^#{cd}/, '')
+          if inner = file.match(/^\{(?<rgss>\d+)\}$/)
+            id = inner[:rgss].to_i
+            file = "[#{$RGSS_SCRIPTS[id][1]}]"
+          end
+          f.puts "   #{file} #{parts[:line]}: #{parts[:code]}"
+        else
+          f.puts "   #{c}"
+        end
+      end
+    end
+  end
+
+  def self.evil code, async=nil # async=the_uniq_task_id_provided_by_client
+    if async
+      TASKS[async] = Thread.new code, async, &method(:evil_task)
+    else
+      evil_task code
+    end
+  end
+
+  def self.update_evil
+    Dir.glob File.join(VAR_RUN_PATH, '*.i') do |file|
+      async = File.basename(file, '.i')
+      async = nil if async == 'a'
+      code = File.read file
+      evil code, async
+      File.delete file
+    end
+  end
+
+  class << ::Graphics
+    alias _update_without_rrnide_evil update
+    def update
+      _update_without_rrnide_evil
+      Rrnide.update_evil
+    end
+  end
 end
