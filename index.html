@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width">
+  <title>rrnide!</title>
+  <style>
+    nav {
+      display: flex;
+    }
+    nav a {
+      color: rgba(0,0,0,.8);
+      min-width: 5em;
+      padding: .5em;
+      text-align: center;
+      border: 1px solid rgba(0,0,0,.1);
+      cursor: pointer;
+      user-select: none;
+      -moz-user-select: none;
+    }
+    nav a:hover {
+      outline: 1px solid;
+    }
+    nav a.active {
+      color: #000;
+      border-color: rgba(0,0,0,.5);
+      background-color: rgba(0,0,0,.1);
+    }
+    section {
+      margin: 8px 0;
+    }
+    pre {
+      tab-size: 2;
+      -moz-tab-size: 2;
+      white-space: pre-wrap;
+    }
+    pre, code {
+      font-family: Iosevka, '等距更纱黑体 SC', Consolas, monospace;
+      font-feature-settings: 'tnum' 0, 'ss11' 1;
+    }
+    #Console {
+      font-size: 16px;
+      border: 1px solid rgba(0,0,0,.2);
+      background-color: rgba(0,0,0,.025);
+    }
+    #Console:focus-within {
+      border: 1px solid rgba(0,0,0,.5);
+      box-shadow: 0 0 0 2px rgba(0,0,0,.1);
+    }
+    #Console-output {
+      margin: 0;
+      padding: .5em .5em 0;
+    }
+    #Console pre[contenteditable] {
+      outline: 0;
+      margin: 0;
+      padding: 0 .5em .5em 2em;
+      position: relative;
+    }
+    #Console pre[contenteditable]::before {
+      position: absolute; left: .5em;
+      content: '>> ';
+      color: rgba(0,0,0,.5);
+    }
+    #console-tip {
+      font-size: small;
+      margin: 0;
+      border-top: 1px dashed rgba(0,0,0,.2);
+      padding: .5em 1em;
+      color: rgba(0,0,0,.25);
+      text-align: right;
+      cursor: default;
+      user-select: none;
+      -moz-user-select: none;
+    }
+    #console-run {
+      text-decoration: underline;
+      cursor: pointer;
+      user-select: none;
+      -moz-user-select: none;
+    }
+    #console-run:hover {
+      color: rgba(0,0,0,.8);
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a target="#Console" class="active">控制台</a>
+    <a target="#Null">空</a>
+  </nav>
+  <section id="Console">
+    <pre id="Console-output"></pre>
+    <pre contenteditable spellcheck="false"><br></pre>
+    <p id="console-tip"><a id="console-run">Ctrl+Enter</a> to eval</p>
+  </section>
+  <section id="Null">
+    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Explicabo obcaecati <b>quasi</b> distinctio hic sunt enim, perspiciatis laboriosam at, qui magni. <i>Incidunt</i> inventore assumenda veniam quisquam autem praesentium at porro quibusdam?
+  </section>
+  <script>
+    (function(){
+      const $ = x => document.querySelector(x);
+      const $$ = x => [...document.querySelectorAll(x)];
+      HTMLElement.prototype.on = HTMLElement.prototype.addEventListener;
+      HTMLElement.prototype.show = function () {
+        this.style.display = '';
+      };
+      HTMLElement.prototype.hide = function () {
+        this.style.display = 'none';
+      };
+      const elt = (tag, attr = {}, ...children) => {
+        const el = document.createElement(tag);
+        for (const [k, v] of Object.entries(Object.assign({}, attr)))
+          el.setAttribute(k, v);
+        for (const c of children)
+          el.append(c);
+        return el;
+      };
+      for (const a of $$('nav a[target]')) {
+        a.on('click', function (e) {
+          $$('nav a[target]').forEach(e => {
+            e.classList.remove('active');
+            $(e.target).hide()
+          });
+          this.classList.add('active');
+          $(this.target).show();
+        });
+        $(a.target).hide();
+      }
+      $($('nav a[target]').target).show();
+      async function sendEvil(code) {
+        const res = await fetch('/', { method: 'post', body: code });
+        return await res.text();
+      }
+      async function evaluate() {
+        const input = $('#Console pre[contenteditable]');
+        const code = input.innerText;
+        const out = code.trim().split('\n')
+                               .map((e, i) => (i ? '   ' : '>> ') + e)
+                               .join('\n') +
+                    '\n=> ' + (await sendEvil(code)) + '\n';
+        $('#Console-output').append(out);
+        while (input.firstChild) input.firstChild.remove();
+        input.append(elt('br'));
+      }
+      $('#Console pre[contenteditable]').on('keydown', async function (e) {
+        if (e.keyCode === 9) { /* Tab */
+          e.preventDefault();
+          document.execCommand('insertHTML', false, '&#009');
+          return true;
+        } else if (e.keyCode === 13 && e.ctrlKey) { /* Ctrl+Enter */
+          e.preventDefault();
+          evaluate();
+        }
+      });
+      $('#console-run').on('click', evaluate);
+    })();
+  </script>
+</body>
+</html>
