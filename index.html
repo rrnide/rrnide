@@ -33,6 +33,7 @@
       tab-size: 2;
       -moz-tab-size: 2;
       white-space: pre-wrap;
+      overflow-wrap: break-word;
     }
     pre, code {
       font-family: Iosevka, '等距更纱黑体 SC', Consolas, monospace;
@@ -101,6 +102,7 @@
     (function(){
       const $ = x => document.querySelector(x);
       const $$ = x => [...document.querySelectorAll(x)];
+      const tap = (e, f) => (f(e), e);
       HTMLElement.prototype.on = HTMLElement.prototype.addEventListener;
       HTMLElement.prototype.show = function () {
         this.style.display = '';
@@ -142,7 +144,9 @@
         input.append(elt('br'));
         const { e, o } = await sendEvil(code);
         if (o) $('#Console-output').append('\n=> ' + o);
-        if (e) $('#Console-output').append('\n+> ' + e);
+        if (e) $('#Console-output').append(
+          tap(elt('span', null, '\n+> ' + e.trim()),
+              e => e.style.color = 'red'));
         $('#Console-output').append('\n');
       }
       $('#Console pre[contenteditable]').on('keydown', async function (e) {
