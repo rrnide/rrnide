@@ -138,7 +138,7 @@ module Rrnide
 
   PLUGINS = {}
 
-  def self.extract_name str
+  def self.extract_name file, str
     if line = str.lines.find { |e| e[/^# @display .+/] }
       /^# @display (?<name>.+)/ =~ line
     else
@@ -162,8 +162,8 @@ module Rrnide
       installed << file
       mtime = File.mtime(file)
       if !PLUGINS[file] || PLUGINS[file][0] != mtime
-        content = File.read(file)
-        name = extract_name(content)
+        content = File.read file
+        name = extract_name(file, content)
         puts "reload [#{name}]"
         if !safe_load file
           content = PLUGINS[file] ? PLUGINS[file][1] : ''
@@ -173,7 +173,7 @@ module Rrnide
     end
     # remove missing files
     (PLUGINS.keys - installed).each do |file|
-      name = extract_name PLUGINS[file][1]
+      name = extract_name file, PLUGINS[file][1]
       puts "remove [#{name}]"
       content = [UNINSTALL_BEGIN, PLUGINS[file][1], UNINSTALL_END].join("\n")
       open(file, 'w') { |f| f.puts content }
@@ -209,8 +209,8 @@ module Rrnide
 
   def self.evil_task code, file='a'
     ret = eval code, TOPLEVEL_BINDING
-    open File.join(VAR_RUN_PATH, "#{file}.o"), 'wb' do |f|
-      f.write Marshal.dump ret
+    open File.join(VAR_RUN_PATH, "#{file}.o"), 'w' do |f|
+      f.write ret.inspect
     end
     TASKS.delete file
   rescue Exception => e
@@ -247,8 +247,8 @@ module Rrnide
       async = File.basename(file, '.i')
       async = nil if async == 'a'
       code = File.read file
-      evil code, async
       File.delete file
+      evil code, async
     end
   end
 

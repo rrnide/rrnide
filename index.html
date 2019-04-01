@@ -130,18 +130,20 @@
       $($('nav a[target]').target).show();
       async function sendEvil(code) {
         const res = await fetch('/', { method: 'post', body: code });
-        return await res.text();
+        return await res.json();
       }
       async function evaluate() {
         const input = $('#Console pre[contenteditable]');
         const code = input.innerText;
-        const out = code.trim().split('\n')
-                               .map((e, i) => (i ? '   ' : '>> ') + e)
-                               .join('\n') +
-                    '\n=> ' + (await sendEvil(code)) + '\n';
-        $('#Console-output').append(out);
+        $('#Console-output').append(code.trim().split('\n')
+                                        .map((e, i) => (i ? '   ' : '>> ') + e)
+                                        .join('\n'));
         while (input.firstChild) input.firstChild.remove();
         input.append(elt('br'));
+        const { e, o } = await sendEvil(code);
+        if (o) $('#Console-output').append('\n=> ' + o);
+        if (e) $('#Console-output').append('\n+> ' + e);
+        $('#Console-output').append('\n');
       }
       $('#Console pre[contenteditable]').on('keydown', async function (e) {
         if (e.keyCode === 9) { /* Tab */
