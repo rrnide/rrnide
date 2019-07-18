@@ -1,0 +1,2 @@
+Until we have decided to make it public,
+its license is [No License](https://choosealicense.com/no-permission/).
