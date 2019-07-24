@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RRNIDE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="window">
+        <div class="titlebar">
+            <span class="icon"></span>
+            <span class="title">RGSS Console - RRNIDE TECH.</span>
+            <span class="button min"></span>
+            <span class="button max" onclick="toggleFullscreen()"></span>
+            <span class="button close" onclick="window.close()"></span>
+        </div>
+        <div class="console">
+            <div id="output" class="output"></div>
+            <div class="input">
+                <div class="prompt">&gt;&gt;&nbsp;</div>
+                <textarea id="input"></textarea>
+            </div>
+        </div>
+    </div>
+    <script src="autosize.min.js"></script>
+    <script>
+        autosize(input);
+        function toggleFullscreen() {
+            var maxButton = document.querySelector('.button.max');
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+                maxButton.classList.remove('fullscreen');
+            } else {
+                app.requestFullscreen();
+                maxButton.classList.add('fullscreen');
+            }
+        }
+        var debugEchoQueue = [];
+        const delay = ms => new Promise(r => setTimeout(r, ms));
+        function post(url, data = null) {
+            if (typeof data !== 'string') {
+                data = JSON.stringify(data);
+            }
+            return fetch(url, { method: 'post', body: data }).then(r => r.json())
+        }
+        class TermBuffer {
+            constructor(str) {
+                this.str = '';
+                this.x = this.y = 0;
+                this.signs = {};
+                for (const tok of str.match(/\r|\n|\x1B\[\d*[;\d+]*[A-Km]|[^\x1B\r]*/g)) {
+                    if (tok === '\r') this.ret();
+                    else if (tok === '\n') this.newLine();
+                    else if (tok[0] === '\x1B') {
+                        const t = tok.slice(-1);
+                        if (t == 'm') {
+                            for (const color of tok.slice(2, -1).split(';')) {
+                                this.color(Number(color));
+                            }
+                        }
+                        // TODO: A-K
+                    } else {
+                        this.insert(tok);
+                    }
+                }
+            }
+            insert(str) {
+                const lines = this.str.split('\n');
+                const line = lines[this.y];
+                const prefix = line.slice(0, this.x);
+                const suffix = line.slice(this.x + str.length, line.length)
+                lines[this.y] = prefix + str + suffix;
+                this.str = lines.join('\n');
+                this.x += str.length;
+            }
+            newLine() {
+                this.insert('\n');
+                this.x = 0;
+                this.y += 1;
+            }
+            ret() {
+                this.x = 0;
+            }
+            color(num) {
+                const key = `${this.x},${this.y}`;
+                const value = this.signs[key] || [];
+                value.push(num);
+                this.signs[key] = value;
+            }
+            *[Symbol.iterator]() {
+                const lines = this.str.split('\n');
+                let _x = 0, x = 0, y = 0, f = 0, b = 0,
+                    nums, tok = document.createElement('span');
+                for (const line of lines) {
+                    for (x = 0; x < line.length; ++x) {
+                        if (nums = this.signs[`${x},${y}`]) {
+                            for (const num of nums)
+                                if (num === 0)
+                                    f = b = 0;
+                                else if (~~(num / 10) % 2)
+                                    f = num;
+                                else
+                                    b = num;
+                            tok.append(line.slice(_x, x));
+                            _x = x;
+                            if (tok.textContent) {
+                                if (tok.classList.length)
+                                    yield tok;
+                                else
+                                    yield tok.textContent;
+                            }
+                            tok = document.createElement('span');
+                            if (f !== 0) tok.classList.add(`f${f}`);
+                            if (b !== 0) tok.classList.add(`b${b}`);
+                        }
+                    }
+                    if (x > _x) {
+                        tok.append(line.slice(_x, x));
+                        if (tok.textContent) {
+                            if (tok.classList.length)
+                                yield tok;
+                            else
+                                yield tok.textContent;
+                        }
+                    }
+                    if (y !== lines.length - 1) {
+                        yield '\n';
+                        ++y;
+                        _x = x = 0;
+                    }
+                }
+            }
+        }
+        function stdout(str) {
+            const buf = new TermBuffer(str);
+            output.append(...buf);
+        }
+        function desugar(text) {
+            text = text.replace(
+                /\.@(\w+)\s*=\s*([^\n;]+)/g,
+                '.instance_variable_set(:@$1, $2)');
+            text = text.replace(
+                /\.@(\w+)/g,
+                '.instance_variable_get(:@$1)');
+            return text;
+        }
+        const history = [];
+        let historyIndex = -1;
+        input.addEventListener('keydown', async function (e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                historyIndex = -1;
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '\n' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 1;
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                historyIndex = -1;
+                const text = desugar(input.value);
+                if (text) {
+                    input.value = '';
+                    const ret = await post('/console/eval', text);
+                    if (ret === true) {
+                        history.unshift(text);
+                        while (history.length > 120) {
+                            history.pop();
+                        }
+                        stdout('>> ' + text.replace(/\n/g, '\n   ') + '\n');
+                        poll(); // TODO: switch to websocket
+                    } else if (ret === '..') {
+                        stdout('(incomplete code, press ctrl+enter to type \\n)\n');
+                    } else
+                        stdout('(failed to connect, waiting for game restart)\n');
+                }
+            } else if (e.key == 'Tab') {
+                e.preventDefault();
+                historyIndex = -1;
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 2;
+            } else if (e.key == 'ArrowUp' && !e.ctrlKey && historyIndex < history.length - 1) {
+                e.preventDefault();
+                historyIndex += 1;
+                this.value = history[historyIndex]
+                this.selectionStart = this.selectionEnd = this.value.length;
+            } else if (e.key == 'ArrowDown' && !e.ctrlKey && historyIndex > -1) {
+                e.preventDefault();
+                historyIndex -= 1;
+                if (historyIndex > -1 && history[historyIndex])
+                    this.value = history[historyIndex];
+                else
+                    this.value = '';
+                this.selectionStart = this.selectionEnd = this.value.length;
+            }
+        });
+        async function poll(times = 1) {
+            const { ret } = await post('/console/poll');
+            if (ret) {
+                stdout(ret);
+                poll(1)
+            } else if (times > 0) {
+                poll(times - 1);
+            }
+        }
+    </script>
+</body>
+</html>
