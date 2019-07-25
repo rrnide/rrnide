@@ -38,7 +38,6 @@ class AppRoute < Midori::API
 end
 
 begin
-  Midori::Configure.set :logger, Logger.new(StringIO.new)
   Midori::Runner.new(AppRoute).start
 rescue Interrupt
   puts "See you next time."

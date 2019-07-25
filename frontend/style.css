@@ -7,13 +7,38 @@ html {
 }
 body {
     flex: 1;
-    margin: 25px;
+    margin: 0;
     font-family: 'Segoe UI', Arial, "Helvetica Neue", Helvetica, sans-serif;
     background-color: #fefefa;
     display: flex;
+    flex-direction: column;
+}
+nav {
+    display: flex;
+}
+nav a {
+    color: rgba(0,0,0,.8);
+    min-width: 160px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 40px;
+    vertical-align: middle;
+    border-top: 2px solid rgba(0,0,0,.1);
+    cursor: pointer;
+    user-select: none;
+}
+nav a:hover {
+    background-color: rgba(0,0,0,.05);
+    box-shadow: 0 0 1px 0 black inset;
+}
+nav a.active {
+    color: #000;
+    border-color: rgba(0,0,0,.5);
+    background-color: rgba(0,0,0,.1);
 }
 .window {
     flex: 1;
+    margin: 8px;
     border: 1px solid #666;
     box-shadow: 0 1px 5px 0 rgba(0,0,0,.25);
     display: flex;
@@ -162,30 +187,29 @@ body {
     font-family: '等距更纱黑体 T SC', Iosevka, monospace;
     font-size: 16px;
     line-height: 20px;
-    white-space: pre-wrap;
-    word-break: break-all;
     background-color: var(--consoleBlack);
     color: var(--consoleWhite);
     overflow-y: scroll;
 }
-.window > .console::selection {
+.window > .console > .wrapper {
+    display: flex;
+    flex-direction: column;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.window > .console > .wrapper::selection {
     background-color: rgba(204,204,204,.996);
     color: var(--consoleBlack);
 }
-
-.window > .console {
-    display: flex;
-    flex-direction: column;
-}
-.window > .console > .input {
+.window > .console > .wrapper > .input {
     flex: 1;
     display: flex;
 }
-.window > .console > .input > .prompt {
+.window > .console > .wrapper > .input > .prompt {
     user-select: none;
     cursor: default;
 }
-.window > .console > .input > textarea {
+.window > .console > .wrapper > .input > textarea {
     flex: 1;
     display: block;
     width: 100%;
@@ -215,3 +239,14 @@ body {
 .f95,.b105,.boldMagenta { color: #b4009e; }
 .f96,.b106,.boldCyan { color: #61d6d6; }
 .f97,.b107,.boldWhite { color: #f2f2f2; }
+.portrait {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    cursor: default;
+    font-size: 5em;
+    font-weight: bold;
+    color: rgba(0,0,0,.05);
+}
