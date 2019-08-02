@@ -1,9 +1,28 @@
-require 'midori.rb'
-require 'mimemagic'
+# encoding: utf-8
 require 'json'
-require_relative 'mailslot'
 
-def is_valid_ruby?(text)
+require 'midori'
+require 'mimemagic'
+
+require_relative 'lib/mailslot'
+
+MESSAGE_QUEUE = []
+CLIENTS = []
+UID = Hash.new { |hash, key| hash[key] = 0 }
+
+class << EventLoop
+  old = instance_method :run_once
+  define_method :run_once do
+    old.bind(self).call
+    if msg = SlotServer.read
+      CLIENTS.each do |ws|
+        ws.send [(JSON.generate msg)].pack('m0')
+      end
+    end
+  end
+end
+
+def check_syntax text
   catch(:out) { eval "BEGIN { throw :out }; #{text}" }
   true
 rescue SyntaxError
@@ -11,37 +30,57 @@ rescue SyntaxError
 end
 
 class AppRoute < Midori::API
-  capture Errno::ENOENT do |e|
-    @status = 404
-    "Not found"
+  websocket '/' do |ws|
+    ws.on :open do
+      CLIENTS.push ws
+    end
+
+    ws.on :close do
+      CLIENTS.delete ws
+    end
   end
 
-  post '/console/eval' do
-    @header['Content-Type'] = 'application/json'
-    text = request.body
-    JSON.generate(is_valid_ruby?(text) ? RrnideServer.write(text) : '..')
+  capture Errno::ENOENT do
+    Midori::Response.new status: 404,
+                         body: 'Not found'
   end
 
-  post '/console/poll' do
+  post '/eval' do
     @header['Content-Type'] = 'application/json'
-    JSON.generate(ret: RrnideServer.read&.force_encoding('utf-8'))
+    unless SlotServer.eval request.body, UID[:eval] += 1
+      JSON.generate false
+    else
+      JSON.generate UID[:eval]
+    end
+  end
+
+  post '/check' do
+    @header['Content-Type'] = 'application/json'
+    JSON.generate check_syntax request.body
   end
 
   get '*' do
     file_path = File.join 'frontend', request.params['splat']
-    file_path = 'frontend/index.html' if file_path == 'frontend/'
+    file_path += 'index.html' if file_path.end_with? '/'
     raise Errno::ENOENT if File.directory? file_path
-    Midori::Response.new(status: 200,
-                         header: { 'Content-Type': MimeMagic.by_path(file_path) },
-                         body: File.read(file_path))
+    payload = {
+      status: 200,
+      header: { 'Content-Type': (MimeMagic.by_path file_path) },
+      body: (IO.binread file_path)
+    }
+    Midori::Response.new **payload
   end
 end
 
+$server = Midori::Runner.new AppRoute
+
 begin
-  Midori::Runner.new(AppRoute).start
+  $server.start
 rescue Interrupt
-  puts "See you next time."
+  puts 'see you next time'
+  $server.stop
 rescue => e
   puts "#{e.class}: #{e}", e.backtrace
+  $server.stop
   retry
 end

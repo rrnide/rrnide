@@ -6,238 +6,72 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav>
-        <a target="#con" class="active">Console</a>
-        <a target="#null">Null</a>
-    </nav>
-    <div id="con" class="window">
+    <div class="app">
         <div class="titlebar">
-            <span class="icon"></span>
-            <span class="title">RGSS Console - RRNIDE TECH.</span>
-            <span class="button min"></span>
-            <span class="button max" onclick="toggleFullscreen()"></span>
-            <span class="button close" onclick="window.close()"></span>
+            <div class="menu">
+                <span tabindex="0" class="item" data-target="#file_menu">File</span>
+            </div>
+            <div id="game_title" class="title">No Project</div>
+            <div id="ping" class="ping">Disconnected</div>
         </div>
-        <div class="console">
-            <div class="wrapper">
-                <div id="output" class="output"></div>
-                <div class="input">
-                    <div class="prompt">&gt;&gt;&nbsp;</div>
-                    <textarea id="input" spellcheck="false"></textarea>
+        <div class="content">
+            <div class="activity">
+                <div class="item" title="Plugins" data-target="#plugin_manager">
+                    <i data-eva="file-text-outline"></i>
+                </div>
+                <div class="item active" title="Console" data-target="#console">
+                    <i data-eva="monitor-outline"></i>
+                </div>
+                <div class="item" title="Database" data-target="#database">
+                    <i data-eva="grid-outline"></i>
+                </div>
+                <div class="item" data-target="#null">
                 </div>
             </div>
+            <div id="plugin_manager" class="wrapper" hidden>
+                <div class="sidebar">
+                    <div class="title">Plugins</div>
+                    <div class="search"><input id="plugin_search" placeholder="Search"></div>
+                    <div id="plugin_list" class="list">
+                        <div class="item">
+                            <div class="titleline">
+                                <span class="title">hello world!</span>
+                                <span class="version">0.1.0</span>
+                            </div>
+                            <div class="desc">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas quidem doloremque iure distinctio dolorum quisquam, odio tenetur ab at deleniti earum architecto commodi minima unde officiis cumque voluptatum laborum dolor!</div>
+                            <div class="author">hyrious</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plugin_config" class="config center">
+                    This plugin does not provide any configs.
+                </div>
+            </div>
+            <div id="console" class="wrapper">
+                <div class="console">
+                    <div id="console_output" class="output"></div>
+                    <div class="input">
+                        <div class="prompt">&gt;&gt;&nbsp;</div>
+                        <textarea id="console_input" spellcheck="false" class="mousetrap"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div id="database" class="wrapper" hidden>
+            </div>
+            <div id="null" class="wrapper center" hidden>Nothing here.</div>
         </div>
+        <div class="statusbar">
+            <span id="status_message" class="message">ready</span>
+        </div>
+        <ul id="file_menu" class="context-menu" hidden>
+            <li class="item" data-hotkey="Ctrl+W">Exit</li>
+        </ul>
     </div>
-    <div id="null" class="portrait">nothing here</div>
-    <script src="autosize.min.js"></script>
-    <script>
-        function $(sel) {
-            return document.querySelector(sel);
-        }
-        function $$(sel) {
-            return Array.from(document.querySelectorAll(sel));
-        }
-        const navButtons = $$('nav a[target]');
-        for (const a of navButtons) {
-            a.addEventListener('click', function () {
-            for (const e of navButtons) {
-                e.classList.remove('active');
-                $(e.target).style.display = 'none';
-            };
-            this.classList.add('active');
-                $(this.target).style.display = 'flex';
-            });
-            if (!a.classList.contains('active'))
-                $(a.target).style.display = 'none';
-        }
-        autosize(input);
-        function toggleFullscreen() {
-            var maxButton = $('.button.max');
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
-                maxButton.classList.remove('fullscreen');
-            } else {
-                con.requestFullscreen();
-                maxButton.classList.add('fullscreen');
-            }
-        }
-        const delay = ms => new Promise(r => setTimeout(r, ms));
-        function post(url, data = null) {
-            if (typeof data !== 'string') {
-                data = JSON.stringify(data);
-            }
-            return fetch(url, { method: 'post', body: data }).then(r => r.json())
-        }
-        class TermBuffer {
-            constructor(str) {
-                this.str = '';
-                this.x = this.y = 0;
-                this.signs = {};
-                for (const tok of str.match(/\r|\n|\x1B\[\d*[;\d+]*[A-Km]|[^\x1B\r]*/g)) {
-                    if (tok === '\r') this.ret();
-                    else if (tok === '\n') this.newLine();
-                    else if (tok[0] === '\x1B') {
-                        const t = tok.slice(-1);
-                        if (t == 'm') {
-                            for (const color of tok.slice(2, -1).split(';')) {
-                                this.color(Number(color));
-                            }
-                        }
-                        // TODO: A-K
-                    } else {
-                        this.insert(tok);
-                    }
-                }
-            }
-            insert(str) {
-                const lines = this.str.split('\n');
-                const line = lines[this.y];
-                const prefix = line.slice(0, this.x);
-                const suffix = line.slice(this.x + str.length, line.length)
-                lines[this.y] = prefix + str + suffix;
-                this.str = lines.join('\n');
-                this.x += str.length;
-            }
-            newLine() {
-                this.insert('\n');
-                this.x = 0;
-                this.y += 1;
-            }
-            ret() {
-                this.x = 0;
-            }
-            color(num) {
-                const key = `${this.x},${this.y}`;
-                const value = this.signs[key] || [];
-                value.push(num);
-                this.signs[key] = value;
-            }
-            *[Symbol.iterator]() {
-                let _i = 0, i = 0, x = 0, y = 0, f = 0, b = 0,
-                    nums, tok = document.createElement('span');
-                for (i = 0; i < this.str.length; ++i) {
-                    if (nums = this.signs[`${x},${y}`]) {
-                        for (const num of nums)
-                            if (num === 0)
-                                f = b = 0;
-                            else if (~~(num / 10) % 2)
-                                f = num;
-                            else
-                                b = num;
-                        tok.append(this.str.slice(_i, i));
-                        _i = i;
-                        if (tok.textContent) {
-                            if (tok.classList.length)
-                                yield tok;
-                            else
-                                yield tok.textContent;
-                        }
-                        tok = document.createElement('span');
-                        if (f !== 0) tok.classList.add(`f${f}`);
-                        if (b !== 0) tok.classList.add(`b${b}`);
-                    }
-                }
-                if (i > _i) {
-                    tok.append(this.str.slice(_i, i));
-                    if (tok.textContent) {
-                        if (tok.classList.length)
-                            yield tok;
-                        else
-                            yield tok.textContent;
-                    }
-                }
-                if (this.str[i] === '\n') {
-                    ++y;
-                    x = 0;
-                } else {
-                    ++x;
-                }
-            }
-        }
-        function stdout(str) {
-            const buf = new TermBuffer(str);
-            output.append(...buf);
-            input.scrollIntoView();
-        }
-        function desugar(text) {
-            text = text.replace(
-                /\.@(\w+)\s*=\s*([^\n;]+)/g,
-                '.instance_variable_set(:@$1, $2)');
-            text = text.replace(
-                /\.@(\w+)/g,
-                '.instance_variable_get(:@$1)');
-            return text;
-        }
-        con.addEventListener('click', function () {
-            input.focus();
-        });
-        const history = [];
-        let historyIndex = -1;
-        input.addEventListener('keydown', async function (e) {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                e.preventDefault();
-                historyIndex = -1;
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + '\n' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 1;
-                autosize.update(this);
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                historyIndex = -1;
-                const originalText = this.value;
-                const text = desugar(originalText);
-                if (text) {
-                    this.value = '';
-                    const ret = await post('/console/eval', text);
-                    if (ret === true) {
-                        history.unshift(originalText);
-                        while (history.length > 120) {
-                            history.pop();
-                        }
-                        stdout('>> ' + text.split('\n').join('\n   ') + '\n');
-                        poll(); // TODO: switch to websocket
-                    } else if (ret === '..') {
-                        stdout('?? ' + text.split('\n').join('\n   ') + '\n');
-                        stdout('(incomplete code. hint: press ctrl+enter to type \\n)\n');
-                    } else
-                        stdout('(failed to connect, waiting for game restart)\n');
-                }
-            } else if (e.key === 'Tab') {
-                e.preventDefault();
-                historyIndex = -1;
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 2;
-            } else if (e.key === 'ArrowUp' && !e.ctrlKey && historyIndex < history.length - 1) {
-                e.preventDefault();
-                historyIndex += 1;
-                this.value = history[historyIndex]
-                this.selectionStart = this.selectionEnd = this.value.length;
-            } else if (e.key === 'ArrowDown' && !e.ctrlKey && historyIndex > -1) {
-                e.preventDefault();
-                historyIndex -= 1;
-                if (historyIndex > -1 && history[historyIndex])
-                    this.value = history[historyIndex];
-                else
-                    this.value = '';
-                this.selectionStart = this.selectionEnd = this.value.length;
-            } else if (e.key === 'l' && e.ctrlKey) {
-                e.preventDefault();
-                historyIndex = -1;
-                output.innerHTML = '';
-            }
-        });
-        async function poll(times = 1) {
-            const { ret } = await post('/console/poll');
-            if (ret) {
-                stdout(ret);
-                poll(1)
-            } else if (times > 0) {
-                poll(times - 1);
-            }
-        }
-    </script>
+    <script src="vendor/eva.min.js"></script>
+    <script src="vendor/autosize.min.js"></script>
+    <script src="vendor/axios.min.js"></script>
+    <script src="vendor/base64.min.js"></script>
+    <script src="vendor/mousetrap.min.js"></script>
+    <script src="main.js" type="module"></script>
 </body>
 </html>

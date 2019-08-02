@@ -1,0 +1,9 @@
+TODO:
+  - Console
+    [ ] TermBuffer (to support ANSI Escape Code) @low
+  - Plugin Manager
+    [ ] Basic Functions (parse meta, install/uninstall) @high
+    [ ] Configuration @low
+  - Database Extension
+    [ ] Basic Functions (load from file) @high
+    [ ] HMR Utility @low

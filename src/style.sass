@@ -1,0 +1,256 @@
+*
+    box-sizing: border-box
+
+    &:focus
+        outline: 0
+
+body
+    font-family: 'Segoe UI', system-ui
+    color: #d0d0d0
+    background-color: black
+
+=cursor-default
+    -moz-user-select: none
+    user-select: none
+    cursor: default
+
+[hidden]
+    display: none !important
+
+.center
+    display: flex
+    align-items: center
+    justify-content: center
+    +cursor-default
+
+.context-menu
+    position: absolute
+    list-style-type: none
+    margin: 0
+    padding: 4px 0
+    display: inline-block
+    min-width: 200px
+    font-size: 14px
+    background-color: #252526
+    box-shadow: 0 1px 5px 0 rgba(0,0,0,.5)
+
+    > .title
+        height: 24px
+        line-height: 24px
+        padding-left: 8px
+        margin: 2px 0 4px
+        font-size: 12px
+        font-weight: bold
+        background-color: #383838
+        +cursor-default
+
+    > .item
+        padding-left: 8px
+        line-height: 22px
+        +cursor-default
+
+        &::after
+            content: attr(data-hotkey)
+            position: absolute
+            right: 8px
+            color: #999
+
+        &:hover
+            color: #fff
+            background-color: #094771
+
+html
+    width: 100%
+    height: 100%
+    display: flex
+
+body
+    margin: 0
+    flex: 1
+    display: flex
+    --consoleBlack: #0c0c0c
+    --consoleBlue: #0037da
+    --consoleGreen: #13a10e
+    --consoleCyan: #3a96dd
+    --consoleRed: #c50f1f
+    --consoleMagenta: #881798
+    --consoleYellow: #c19c00
+    --consoleWhite: #cccccc
+    --consoleBoldBlack: #767676
+    --consoleBoldBlue: #3b78ff
+    --consoleBoldGreen: #16c60c
+    --consoleBoldCyan: #61d6d6
+    --consoleBoldRed: #e74856
+    --consoleBoldMagenta: #b4009e
+    --consoleBoldYellow: #f9f1a5
+    --consoleBoldWhite: #f2f2f2
+
+.app
+    flex: 1
+    display: flex
+    flex-direction: column
+
+    > .titlebar
+        height: 30px
+        display: flex
+        align-items: center
+        padding-left: 2px
+        background-color: #3c3c3c
+        font-size: 14px
+        +cursor-default
+
+        > .menu
+            height: 30px
+            display: flex
+            align-items: center
+
+            > .item
+                line-height: 30px
+                padding: 0 8px
+
+                &:hover, &:focus
+                    box-shadow: 0 0 1px 0 black inset
+                    background-color: #505050
+
+        > .title
+            flex: 1
+            line-height: 30px
+            text-align: center
+
+        > .ping
+            margin-right: 8px
+
+    > .content
+        flex-grow: 1
+        display: flex
+        min-height: 0
+        background-color: #1e1e1e
+
+        > .activity
+            width: 48px
+            background-color: #333333
+            display: flex
+            flex-direction: column
+            align-items: center
+            +cursor-default
+
+            > .item
+                width: 48px
+                height: 49px
+                display: flex
+                align-items: center
+                justify-content: center
+
+                > .eva
+                    fill: #adadad
+
+                &.active > .eva,
+                &:hover > .eva
+                    fill: #fff
+
+        > .wrapper
+            flex-grow: 1
+            overflow-y: auto
+            display: flex
+
+            > .sidebar
+                width: 233px
+                background-color: #252526
+                +cursor-default
+
+                > .title
+                    height: 30px
+                    font-size: 12px
+                    line-height: 30px
+                    padding-left: 8px
+
+                > .search
+                    padding: 2px 8px 4px
+                    display: flex
+
+                    input
+                        flex: 1
+                        border: 0
+                        height: 28px
+                        padding: 4px
+                        color: #e8e8e8
+                        background-color: #3c3c3c
+
+                > .list
+
+                    > .item
+                        height: 60px
+                        padding: 0 8px
+                        font-size: 14px
+
+                        &:hover
+                            color: #eee
+                            background-color: #2a2d2e
+
+                        &:active
+                            background-color: #094771
+
+                        > .titleline
+                            > .title
+                                font-weight: bold
+                            > .version
+                                font-size: 12px
+
+                        > .desc
+                            white-space: nowrap
+                            overflow: hidden
+                            text-overflow: ellipsis
+
+            > .console
+                flex: 1
+                display: flex
+                padding: 8px
+                background-color: var(--consoleBlack)
+                color: var(--consoleWhite)
+                font-size: 16px
+                font-family: '等距更纱黑体 T SC', Iosevka, Consolas, monospace
+                line-height: 20px
+                flex-direction: column
+                white-space: pre-wrap
+                word-break: break-all
+                overflow-y: scroll
+
+                > .input
+                    flex: 1
+                    display: flex
+
+                    > .prompt
+                        +cursor-default
+
+                    > textarea
+                        flex: 1
+                        display: block
+                        width: 100%
+                        padding: 0
+                        border: 0
+                        outline: 0
+                        resize: none !important
+                        font-size: inherit
+                        font-family: inherit
+                        line-height: inherit
+                        color: var(--consoleWhite)
+                        background-color: transparent
+
+            > .config
+                flex-grow: 1
+                display: flex
+                min-height: 0
+
+    > .statusbar
+        height: 22px
+        display: flex
+        align-items: center
+        padding-left: 5px
+        font-size: 12px
+        font-family: Iosevka, Consolas, monospace
+        color: #eee
+        background-color: #007acc
+        +cursor-default
+
+        > .message
+            line-height: 22px

@@ -1,252 +1,275 @@
+@charset "UTF-8";
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
-html {
-    height: 100%;
-    display: flex;
+*:focus {
+  outline: 0;
 }
+
 body {
-    flex: 1;
-    margin: 0;
-    font-family: 'Segoe UI', Arial, "Helvetica Neue", Helvetica, sans-serif;
-    background-color: #fefefa;
-    display: flex;
-    flex-direction: column;
+  font-family: "Segoe UI", system-ui;
+  color: #d0d0d0;
+  background-color: black;
 }
-nav {
-    display: flex;
+
+[hidden] {
+  display: none !important;
 }
-nav a {
-    color: rgba(0,0,0,.8);
-    min-width: 160px;
-    text-align: center;
-    font-size: 14px;
-    line-height: 40px;
-    vertical-align: middle;
-    border-top: 2px solid rgba(0,0,0,.1);
-    cursor: pointer;
-    user-select: none;
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
 }
-nav a:hover {
-    background-color: rgba(0,0,0,.05);
-    box-shadow: 0 0 1px 0 black inset;
+
+.context-menu {
+  position: absolute;
+  list-style-type: none;
+  margin: 0;
+  padding: 4px 0;
+  display: inline-block;
+  min-width: 200px;
+  font-size: 14px;
+  background-color: #252526;
+  box-shadow: 0 1px 5px 0 rgba(0, 0, 0, 0.5);
 }
-nav a.active {
-    color: #000;
-    border-color: rgba(0,0,0,.5);
-    background-color: rgba(0,0,0,.1);
+.context-menu > .title {
+  height: 24px;
+  line-height: 24px;
+  padding-left: 8px;
+  margin: 2px 0 4px;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #383838;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
 }
-.window {
-    flex: 1;
-    margin: 8px;
-    border: 1px solid #666;
-    box-shadow: 0 1px 5px 0 rgba(0,0,0,.25);
-    display: flex;
-    flex-direction: column;
+.context-menu > .item {
+  padding-left: 8px;
+  line-height: 22px;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
 }
-.window > .titlebar {
-    line-height: 30px;
-    vertical-align: middle;
-    display: flex;
-    user-select: none;
-    cursor: default;
-    background-color: white;
+.context-menu > .item::after {
+  content: attr(data-hotkey);
+  position: absolute;
+  right: 8px;
+  color: #999;
 }
-.window > .titlebar > .icon {
-    width: 22px;
-    height: 30px;
-    padding-left: 8px;
-    padding-bottom: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.context-menu > .item:hover {
+  color: #fff;
+  background-color: #094771;
 }
-.window > .titlebar > .icon::before {
-    content: '';
-    width: 12px;
-    border-bottom: 2px solid;
-    transform: rotate(45deg);
-    position: absolute;
-    transition: transform 100ms ease;
+
+html {
+  width: 100%;
+  height: 100%;
+  display: flex;
 }
-.window > .titlebar > .icon::after {
-    content: '';
-    height: 12px;
-    border-right: 2px solid;
-    position: absolute;
-    transition: transform 100ms ease;
+
+body {
+  margin: 0;
+  flex: 1;
+  display: flex;
+  --consoleBlack: #0c0c0c;
+  --consoleBlue: #0037da;
+  --consoleGreen: #13a10e;
+  --consoleCyan: #3a96dd;
+  --consoleRed: #c50f1f;
+  --consoleMagenta: #881798;
+  --consoleYellow: #c19c00;
+  --consoleWhite: #cccccc;
+  --consoleBoldBlack: #767676;
+  --consoleBoldBlue: #3b78ff;
+  --consoleBoldGreen: #16c60c;
+  --consoleBoldCyan: #61d6d6;
+  --consoleBoldRed: #e74856;
+  --consoleBoldMagenta: #b4009e;
+  --consoleBoldYellow: #f9f1a5;
+  --consoleBoldWhite: #f2f2f2;
 }
-.window > .titlebar > .icon:hover::before {
-    transform: rotate(0);
+
+.app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
-.window > .titlebar > .icon:hover::after {
-    transform: rotate(45deg);
+.app > .titlebar {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding-left: 2px;
+  background-color: #3c3c3c;
+  font-size: 14px;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
 }
-.window > .titlebar > .title {
-    font-size: 12px;
-    font-family: 'Segoe UI', system-ui;
-    margin-left: 5px;
-    flex: 1;
+.app > .titlebar > .menu {
+  height: 30px;
+  display: flex;
+  align-items: center;
 }
-.window > .titlebar > .button:hover {
-    background-color: rgba(0,0,0,.08);
-    transition: all 100ms ease;
+.app > .titlebar > .menu > .item {
+  line-height: 30px;
+  padding: 0 8px;
 }
-.window > .titlebar > .button:active {
-    background-color: rgba(0,0,0,.20);
-    transition: none;
+.app > .titlebar > .menu > .item:hover, .app > .titlebar > .menu > .item:focus {
+  box-shadow: 0 0 1px 0 black inset;
+  background-color: #505050;
 }
-.window > .titlebar > .button {
-    width: 47px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 200ms ease;
+.app > .titlebar > .title {
+  flex: 1;
+  line-height: 30px;
+  text-align: center;
 }
-.window > .titlebar > .min::after {
-    content: '';
-    width: 10px;
-    border-bottom: 1px solid;
+.app > .titlebar > .ping {
+  margin-right: 8px;
 }
-.window > .titlebar > .max::after {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border: 1px solid;
+.app > .content {
+  flex-grow: 1;
+  display: flex;
+  min-height: 0;
+  background-color: #1e1e1e;
 }
-.window > .titlebar > .max.fullscreen::before,
-.window > .titlebar > .max.fullscreen::after {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border: 1px solid;
-    background-color: white;
-    position: absolute;
-    transition: all 100ms ease;
+.app > .content > .activity {
+  width: 48px;
+  background-color: #333333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
 }
-.window > .titlebar > .max.fullscreen:hover::before,
-.window > .titlebar > .max.fullscreen:hover::after {
-    background-color: #ebebeb;
+.app > .content > .activity > .item {
+  width: 48px;
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.window > .titlebar > .max.fullscreen:active::before,
-.window > .titlebar > .max.fullscreen:active::after {
-    background-color: #cccccc;
+.app > .content > .activity > .item > .eva {
+  fill: #adadad;
 }
-.window > .titlebar > .max.fullscreen::before {
-    transform: translate(1px, -1px);
+.app > .content > .activity > .item.active > .eva, .app > .content > .activity > .item:hover > .eva {
+  fill: #fff;
 }
-.window > .titlebar > .max.fullscreen::after {
-    transform: translate(-1px, 1px);
+.app > .content > .wrapper {
+  flex-grow: 1;
+  overflow-y: auto;
+  display: flex;
 }
-.window > .titlebar > .close:hover {
-    color: white;
-    background-color: rgba(232,17,35);
+.app > .content > .wrapper > .sidebar {
+  width: 233px;
+  background-color: #252526;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
 }
-.window > .titlebar > .close:active {
-    background-color: rgba(232,17,35,.4);
+.app > .content > .wrapper > .sidebar > .title {
+  height: 30px;
+  font-size: 12px;
+  line-height: 30px;
+  padding-left: 8px;
 }
-.window > .titlebar > .close:hover::before,
-.window > .titlebar > .close:hover::after {
-    border-bottom-width: 2px;
+.app > .content > .wrapper > .sidebar > .search {
+  padding: 2px 8px 4px;
+  display: flex;
 }
-.window > .titlebar > .close::before {
-    content: '';
-    width: 10px;
-    border-bottom: 1px solid;
-    transform: skewY(45deg);
-    position: absolute;
+.app > .content > .wrapper > .sidebar > .search input {
+  flex: 1;
+  border: 0;
+  height: 28px;
+  padding: 4px;
+  color: #e8e8e8;
+  background-color: #3c3c3c;
 }
-.window > .titlebar > .close::after {
-    content: '';
-    width: 10px;
-    border-bottom: 1px solid;
-    transform: skewY(-45deg);
-    position: absolute;
+.app > .content > .wrapper > .sidebar > .list > .item {
+  height: 60px;
+  padding: 0 8px;
+  font-size: 14px;
 }
-.window > .console {
-    flex: 1;
-    /* windows10 cmd default colors */
-    --consoleBlack: #0c0c0c;
-    --consoleBlue: #0037da;
-    --consoleGreen: #13a10e;
-    --consoleCyan: #3a96dd;
-    --consoleRed: #c50f1f;
-    --consoleMagenta: #881798;
-    --consoleYellow: #c19c00;
-    --consoleWhite: #cccccc;
-    --consoleBoldBlack: #767676;
-    --consoleBoldBlue: #3b78ff;
-    --consoleBoldGreen: #16c60c;
-    --consoleBoldCyan: #61d6d6;
-    --consoleBoldRed: #e74856;
-    --consoleBoldMagenta: #b4009e;
-    --consoleBoldYellow: #f9f1a5;
-    --consoleBoldWhite: #f2f2f2;
-    padding: 8px;
-    font-family: '等距更纱黑体 T SC', Iosevka, monospace;
-    font-size: 16px;
-    line-height: 20px;
-    background-color: var(--consoleBlack);
-    color: var(--consoleWhite);
-    overflow-y: scroll;
+.app > .content > .wrapper > .sidebar > .list > .item:hover {
+  color: #eee;
+  background-color: #2a2d2e;
 }
-.window > .console > .wrapper {
-    display: flex;
-    flex-direction: column;
-    white-space: pre-wrap;
-    word-break: break-all;
+.app > .content > .wrapper > .sidebar > .list > .item:active {
+  background-color: #094771;
 }
-.window > .console > .wrapper::selection {
-    background-color: rgba(204,204,204,.996);
-    color: var(--consoleBlack);
+.app > .content > .wrapper > .sidebar > .list > .item > .titleline > .title {
+  font-weight: bold;
 }
-.window > .console > .wrapper > .input {
-    flex: 1;
-    display: flex;
+.app > .content > .wrapper > .sidebar > .list > .item > .titleline > .version {
+  font-size: 12px;
 }
-.window > .console > .wrapper > .input > .prompt {
-    user-select: none;
-    cursor: default;
+.app > .content > .wrapper > .sidebar > .list > .item > .desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.window > .console > .wrapper > .input > textarea {
-    flex: 1;
-    display: block;
-    width: 100%;
-    background-color: transparent;
-    padding: 0;
-    border: none;
-    outline: none;
-    color: var(--consoleWhite);
-    font-family: '等距更纱黑体 T SC', Iosevka, monospace;
-    font-size: 16px;
-    line-height: 20px;
-    resize: vertical;
+.app > .content > .wrapper > .console {
+  flex: 1;
+  display: flex;
+  padding: 8px;
+  background-color: var(--consoleBlack);
+  color: var(--consoleWhite);
+  font-size: 16px;
+  font-family: "等距更纱黑体 T SC", Iosevka, Consolas, monospace;
+  line-height: 20px;
+  flex-direction: column;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-y: scroll;
 }
-.f30,.b40,.black { color: #0c0c0c; }
-.f31,.b41,.red { color: #c50f1f; }
-.f32,.b42,.green { color: #13a10e; }
-.f33,.b43,.yellow { color: #c19c00; }
-.f34,.b44,.blue { color: #0037da; }
-.f35,.b45,.magenta { color: #881798; }
-.f36,.b46,.cyan { color: #3a96dd; }
-.f37,.b47,.white { color: #cccccc; }
-.f90,.b100,.boldBlack { color: #767676; }
-.f91,.b101,.boldRed { color: #e74856; }
-.f92,.b102,.boldGreen { color: #16c60c; }
-.f93,.b103,.boldYellow { color: #f9f1a5; }
-.f94,.b104,.boldBlue { color: #3b78ff; }
-.f95,.b105,.boldMagenta { color: #b4009e; }
-.f96,.b106,.boldCyan { color: #61d6d6; }
-.f97,.b107,.boldWhite { color: #f2f2f2; }
-.portrait {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    cursor: default;
-    font-size: 5em;
-    font-weight: bold;
-    color: rgba(0,0,0,.05);
+.app > .content > .wrapper > .console > .input {
+  flex: 1;
+  display: flex;
 }
+.app > .content > .wrapper > .console > .input > .prompt {
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+.app > .content > .wrapper > .console > .input > textarea {
+  flex: 1;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none !important;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  color: var(--consoleWhite);
+  background-color: transparent;
+}
+.app > .content > .wrapper > .config {
+  flex-grow: 1;
+  display: flex;
+  min-height: 0;
+}
+.app > .statusbar {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding-left: 5px;
+  font-size: 12px;
+  font-family: Iosevka, Consolas, monospace;
+  color: #eee;
+  background-color: #007acc;
+  -moz-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+.app > .statusbar > .message {
+  line-height: 22px;
+}
+
+/*# sourceMappingURL=style.css.map */

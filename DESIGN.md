@@ -1,116 +1,82 @@
-Several features excite us. Let's talk about implementations.
+Features details.
 
-## HMR (Hot Module Replacement)
+## Hot Reload Plugins
 
-A _plugin_ is simply treated as some code to eval. Most of them
-modify existing classes (by alias-patching). To guarantee the
-compatibility of 'traditional plugins', here is the design of
-our HMR system.
-
-1. Use Ripper or other tools to parse the code, pull out
-   `def` and `alias` expressions with namespace information.
-   ```ruby
-   class A
-     def a() 42 end
-     alias b a
-   end
-   ```
-   What we need is
-   ```ruby
-   class A
-     def a ...
-     alias b ...
-   ```
-2. Before each `def`, add some code to store the original
-   method.
-   ```ruby
-   def save sym
-     if method_defined? sym
-       alias_method new_name = gen_name(sym), sym
-       new_name
-     end # nil if not defined
-   end
-   class A
-     save :a; def a ... # don't ruin the line numbers
-     save :b; alias b ...
-   ```
-   The `save`s will construct an array of old methods
-   ```ruby
-   $old_methods = [[A, nil, :a], # scope, auto saved method name, the method name
-                   [A, :_b_add8e6, :b]]
-   ```
-3. Every time when we do _unload_, reverse-restore the old methods.
-   ```ruby
-   $old_methods.reverse_each do |klass, old, now|
-     if old
-       klass.class_eval do
-         alias_method now, old
-         remove_method old
-       end
-     else
-       klass.class_eval do
-         remove_method now
-       end
-     end
-   end.clear
-   ```
-
-## Extend Database
-
-There are two types of database: internal and external.
-Internal databases can be edited in the editor while external ones
-are edited in YAML/JSON/CSV or in any other forms. There should be
-a _stashed_ workspace to save the changes we've done while game
-running. Think of Git.
+First, save all methods (about 7w+ in count) to some place.
 
 ```ruby
-on_commit do |type, data1, data2|
+@old_methods = { klass => { meth_name => [older_meth, old_meth] } }
+@singleton_old_methods = ...
+```
+
+Hook every objects' `method_added(sym)`, then `push` the new methods
+to a stack.
+
+```ruby
+@old_methods[klass][meth.name] << meth
+```
+
+Everytime when we do uninstall or reload, restore the old methods from
+the stack in a reversed order.
+
+```ruby
+scripts.reverse_each do |name, side_effects, _|
+  side_effects.reverse_each do |t, obj, meth|
+    case t
+    when :i
+      restore_old (klass = obj), meth
+    when :s
+      singleton_restore_old obj, meth
+    end
+    puts "  - #{obj}#{{ i: '#', s: '.' }[t]}#{meth}"
+  end.clear
+end
+```
+
+In production mode, store them as internal (Scripts.rvdata2).
+
+## Database Extension
+
+There are two types of databases: internal (rvdata2) and external (may be
+stored as YAML/CSV/JSON).
+
+As to the external one, define a method to read them.
+
+```ruby
+DB.load(file, ext = File.extname(file))
+```
+
+In production mode, store them as internal.
+
+```ruby
+save_data obj, "Data/#{klass.name}.rvdata2"
+```
+
+Interesting things come: we could do hot-reload on databases. Everytime
+the data files change, execute a script to reflect them to runtime.
+
+```ruby
+on_array_commit do |type, a, b|
   case type
   when :insert
-    $data_xxx.insert(data1, data2)
-    $game_xxx...
+    $data_xxx.insert a, b
   when :remove
-    $data_xxx.delete_at(data1)
+    $data_xxx.delete a
     $game_xxx...
   when :replace
-    $data_xxx[data1] = data2
+    $data_xxx[a] = b
     $game_xxx...
   end
 end
 ```
 
-The difficulty is `$game_xxx` may need being modified to meet
-changes we do at `$data_xxx`. After we _stashed_ all changes,
-it means we can do _commit_ to flush them into the game.
+It works if the basic form of data is array (like `[RPG::Item]`).
+A more generic hot-reload script should be introduced to deal with
+singleton data (like `RPG::System`).
 
-YAML/JSON/CSV databases are stored as `.rvdata2` when publishing.
-It in the other word forces us to store data as strings, numbers,
-arrays and hashes. We can make cli/gui to edit the external
-databases.
-
-## Console
-
-REPL is awesome, but RGSS lacks it. To capture the real output
-and keep game running, the design comes:
-
-* Make an external program, let's call it _irgss.exe_.
-  It starts a named pipe and waits for connection.
-  This way, the program can also enable the _console raw mode_
-  to capture Ctrl-C, Ctrl-L, Ctrl-D, Ctrl-Z etc.
-* In the game itself, looking for this pipe on start.
-  Then redirect STDOUT to this pipe.
-* _irgss.exe_ `- "spr(...)" ->` _game.exe_,
-  _game.exe_ `- "#<Sprite:0x12345678>" ->` _irgss.exe_.
-  The _irgss.exe_ does't need to have any ruby runtime.
-  Keep it simple.
-
-Later we will want to add features to this console.
-
-* Code highlight? Just send "\e[A\e[33m" and so on.
-  https://en.wikipedia.org/wiki/ANSI_escape_code
-* Task/thread? Vanilla ruby should be ok.
-  ```ruby
-  a = task { raise 1 }.start
-  a.state/a.stdout/a.stderr...
-  ```
-* Live expression? (from Chrome DevTools)
+```ruby
+on_singleton_commit do |new_data|
+  $data_xxx = new_data
+  $game_xxx...
+end
+```

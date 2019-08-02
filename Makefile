@@ -1,7 +1,10 @@
-all: rgss/mailslot.dll mailslot/mailslot.dll
+all: rgss/mailslot.dll lib/mailslot.dll frontend/style.css
 
-rgss/mailslot.dll: mailslot/mailslot.c
+rgss/mailslot.dll: src/mailslot.c
 	gcc -m32 $^ -shared -s -O -o $@
 
-mailslot/mailslot.dll: mailslot/mailslot.c
+lib/mailslot.dll: src/mailslot.c
 	gcc $^ -shared -s -O -o $@
+
+frontend/style.css: src/style.sass
+	sass $^ $@
