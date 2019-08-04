@@ -1,5 +1,6 @@
 const S = {
-    proj: null // string = path/to/Project1, null = disconnected
+    proj: null, // string = 'Project1', null = disconnected
+    path: null // 'path/to/Project1'
 };
 
 window.S = S;
@@ -75,15 +76,6 @@ status("Start the game to use rrnide!");
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
 
-async function firstRun() {
-    while (S.proj == null) {
-        await delay(50);
-        S.proj = await rubyeval("$data_system.game_title");
-    }
-    $("#game_title").textContent = S.proj;
-    status(`Opened project [${S.proj}]`);
-}
-
 const evalResults = new Map();
 async function rubyeval(text) {
     const startTime = Date.now();
@@ -93,7 +85,8 @@ async function rubyeval(text) {
     for (let i = 0; !evalResults.has(id); ++i) {
         await delay(200);
         if (i > 50) {
-            firstRun();
+            $("#game_title").textContent = "No Project";
+            $("#ping").textContent = "Disconnected";
             return null;
         }
     }
@@ -104,7 +97,19 @@ async function rubyeval(text) {
     return value;
 }
 
-firstRun();
+async function keepAlive() {
+    await delay(50);
+    while (true) {
+        const ret = await rubyeval("$data_system.game_title");
+        if ((S.proj = ret) != null) {
+            $("#game_title").textContent = S.proj;
+            status(`Connected [${S.proj}]`);
+            S.path = await rubyeval("Dir.pwd");
+        }
+        await delay(10000);
+    }
+}
+keepAlive();
 
 const output = $("#console_output");
 const ws = new WebSocket("ws://localhost:8080");
@@ -163,32 +168,165 @@ function indentTextarea(textarea) {
 }
 
 const input = $("#console_input");
+const inputHistory = [];
+const MAX_HISTORY = 120;
+let inputHistoryCursor = -1;
 Mousetrap(input).bind({
     async enter(e) {
         e.preventDefault();
+        inputHistoryCursor = -1;
         if (!input.value) return;
         const { data: valid } = await axios.post("/check", input.value);
         if (valid) {
+            inputHistory.unshift(input.value);
+            while (inputHistory.length > MAX_HISTORY) {
+                inputHistory.pop();
+            }
             const code = `(${input.value}).inspect`;
             const prompt = input.value.split("\n").join("\n   ");
             output.append(`>> ${prompt}\n`);
             input.value = "";
             autosize.update(input);
             const ret = await rubyeval(code);
-            if (ret != null) output.append(`=> ${ret}\n`);
+            if (ret != null) {
+                output.append(`=> ${ret}\n`);
+                autosize.update(input);
+            }
         } else {
             insertText(input, "\n");
         }
     },
     ["ctrl+enter"](e) {
+        inputHistoryCursor = -1;
         insertText(input, "\n");
     },
     tab(e) {
         e.preventDefault();
+        inputHistoryCursor = -1;
         indentTextarea(input);
     },
     ["ctrl+l"](e) {
         e.preventDefault();
+        inputHistoryCursor = -1;
         output.innerHTML = "";
+    },
+    up(e) {
+        if (!inputHistory.length) return;
+        e.preventDefault();
+        ++inputHistoryCursor;
+        if (inputHistoryCursor > inputHistory.length - 1)
+            inputHistoryCursor = inputHistory.length - 1;
+        input.value = inputHistory[inputHistoryCursor];
+        autosize.update(input);
+    },
+    down(e) {
+        if (!inputHistory.length) return;
+        e.preventDefault();
+        --inputHistoryCursor;
+        if (inputHistoryCursor < 0) {
+            inputHistoryCursor = -1;
+            input.value = "";
+        } else {
+            input.value = inputHistory[inputHistoryCursor];
+        }
+        autosize.update(input);
     }
 });
+
+function elt(tag, className, ...children) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    el.append(...children);
+    return el;
+}
+
+function dirtyAuthors(meta) {
+    if (meta.author === "unknown") {
+        if (meta.taroxd) meta.author = "taroxd";
+    }
+}
+
+async function installPlugin(file) {
+    if (await axios.post("/install", [file, S.path])) {
+        await delay(50);
+        $("#plugin_refresh").click();
+    }
+}
+
+async function uninstallPlugin(destfile) {
+    if (await axios.post("/uninstall", [destfile, S.path])) {
+        await delay(50);
+        $("#plugin_refresh").click();
+    }
+}
+
+async function updatePlugin(file) {
+    if (await axios.post("/install", [file, S.path])) {
+        await delay(50);
+        $("#plugin_refresh").click();
+    }
+}
+
+function basename(path) {
+    if (typeof path !== "string") return;
+    return path.split(/[\\/]/).pop();
+}
+
+let plugins = [],
+    plugin_elements = [];
+$("#plugin_refresh").on("click", async _ => {
+    const ret = await axios.get("/plugins");
+    plugins = ret.data;
+    const query = "PluginManager.scripts.map { |f, _, m| [f, m] }";
+    const metas = await rubyeval(query);
+    $("#plugin_list").innerHTML = "";
+    plugin_elements = [];
+    for (const { file, meta, mtime } of plugins) {
+        dirtyAuthors(meta);
+        const action = elt("button", "action", "Install");
+        if (metas != null) {
+            const name = basename(file);
+            const exist = metas.find(([f, m]) => basename(f) === name);
+            const same = exist ? exist[1] === mtime : false;
+            if (same) {
+                action.classList.add("uninstall");
+                action.textContent = "Uninstall";
+                action.on("click", _ => {
+                    uninstallPlugin(exist[0]);
+                });
+            } else if (exist) {
+                action.classList.add("update");
+                action.textContent = "Update";
+                action.on("click", _ => {
+                    updatePlugin(file);
+                });
+            } else {
+                action.on("click", _ => {
+                    installPlugin(file);
+                });
+            }
+        } else {
+            action.disabled = true;
+        }
+        // prettier-ignore
+        const item = elt("div", "item",
+            elt("div", "titleline",
+                elt("span", "title", meta.display),
+                elt("span", "version", meta.version || "")),
+            elt("div", "desc", meta.help),
+            elt("div", "footer",
+                elt('span', 'author', meta.author),
+                action));
+        item.dataset.file = file;
+        item.on("click", _ => {
+            for (const el of plugin_elements) {
+                el.classList.remove("active");
+            }
+            item.classList.add("active");
+        });
+        $("#plugin_list").append(item);
+        plugin_elements.push(item);
+    }
+});
+
+S.plugins = plugins;

@@ -159,10 +159,24 @@ body
                 +cursor-default
 
                 > .title
+                    display: flex
                     height: 30px
                     font-size: 12px
                     line-height: 30px
-                    padding-left: 8px
+                    padding: 0 8px
+
+                    > .name
+                        flex: 1
+
+                    > .action
+                        border: 0
+                        padding: 0
+                        font-size: inherit
+                        color: inherit
+                        background-color: transparent
+
+                        &:hover
+                            color: #fff
 
                 > .search
                     padding: 2px 8px 4px
@@ -183,11 +197,11 @@ body
                         padding: 0 8px
                         font-size: 14px
 
-                        &:hover
+                        &:hover, &.active
                             color: #eee
                             background-color: #2a2d2e
 
-                        &:active
+                        &:active, &.active
                             background-color: #094771
 
                         > .titleline
@@ -200,6 +214,27 @@ body
                             white-space: nowrap
                             overflow: hidden
                             text-overflow: ellipsis
+
+                        > .footer
+                            display: flex
+
+                            > .author
+                                flex: 1
+
+                            > .action
+                                border: 0
+                                color: #fff
+                                background-color: #007acc
+                                border-radius: 4px
+
+                                &.uninstall
+                                    background-color: #cc0000
+
+                                &.update
+                                    background-color: #cc7a00
+
+                                &:disabled
+                                    opacity: .5
 
             > .console
                 flex: 1

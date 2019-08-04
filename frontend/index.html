@@ -16,10 +16,10 @@
         </div>
         <div class="content">
             <div class="activity">
-                <div class="item" title="Plugins" data-target="#plugin_manager">
+                <div class="item active" title="Plugins" data-target="#plugin_manager">
                     <i data-eva="file-text-outline"></i>
                 </div>
-                <div class="item active" title="Console" data-target="#console">
+                <div class="item" title="Console" data-target="#console">
                     <i data-eva="monitor-outline"></i>
                 </div>
                 <div class="item" title="Database" data-target="#database">
@@ -28,26 +28,22 @@
                 <div class="item" data-target="#null">
                 </div>
             </div>
-            <div id="plugin_manager" class="wrapper" hidden>
+            <div id="plugin_manager" class="wrapper">
                 <div class="sidebar">
-                    <div class="title">Plugins</div>
+                    <div class="title">
+                        <span class="name">Plugins</span>
+                        <button id="plugin_refresh" class="action">Refresh</button>
+                    </div>
                     <div class="search"><input id="plugin_search" placeholder="Search"></div>
                     <div id="plugin_list" class="list">
-                        <div class="item">
-                            <div class="titleline">
-                                <span class="title">hello world!</span>
-                                <span class="version">0.1.0</span>
-                            </div>
-                            <div class="desc">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas quidem doloremque iure distinctio dolorum quisquam, odio tenetur ab at deleniti earum architecto commodi minima unde officiis cumque voluptatum laborum dolor!</div>
-                            <div class="author">hyrious</div>
-                        </div>
+                        <p class="center">Press [Refresh] ↗</p>
                     </div>
                 </div>
                 <div id="plugin_config" class="config center">
                     This plugin does not provide any configs.
                 </div>
             </div>
-            <div id="console" class="wrapper">
+            <div id="console" class="wrapper" hidden>
                 <div class="console">
                     <div id="console_output" class="output"></div>
                     <div class="input">

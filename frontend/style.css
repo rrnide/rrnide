@@ -173,10 +173,24 @@ body {
   cursor: default;
 }
 .app > .content > .wrapper > .sidebar > .title {
+  display: flex;
   height: 30px;
   font-size: 12px;
   line-height: 30px;
-  padding-left: 8px;
+  padding: 0 8px;
+}
+.app > .content > .wrapper > .sidebar > .title > .name {
+  flex: 1;
+}
+.app > .content > .wrapper > .sidebar > .title > .action {
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  background-color: transparent;
+}
+.app > .content > .wrapper > .sidebar > .title > .action:hover {
+  color: #fff;
 }
 .app > .content > .wrapper > .sidebar > .search {
   padding: 2px 8px 4px;
@@ -195,11 +209,11 @@ body {
   padding: 0 8px;
   font-size: 14px;
 }
-.app > .content > .wrapper > .sidebar > .list > .item:hover {
+.app > .content > .wrapper > .sidebar > .list > .item:hover, .app > .content > .wrapper > .sidebar > .list > .item.active {
   color: #eee;
   background-color: #2a2d2e;
 }
-.app > .content > .wrapper > .sidebar > .list > .item:active {
+.app > .content > .wrapper > .sidebar > .list > .item:active, .app > .content > .wrapper > .sidebar > .list > .item.active {
   background-color: #094771;
 }
 .app > .content > .wrapper > .sidebar > .list > .item > .titleline > .title {
@@ -212,6 +226,27 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.app > .content > .wrapper > .sidebar > .list > .item > .footer {
+  display: flex;
+}
+.app > .content > .wrapper > .sidebar > .list > .item > .footer > .author {
+  flex: 1;
+}
+.app > .content > .wrapper > .sidebar > .list > .item > .footer > .action {
+  border: 0;
+  color: #fff;
+  background-color: #007acc;
+  border-radius: 4px;
+}
+.app > .content > .wrapper > .sidebar > .list > .item > .footer > .action.uninstall {
+  background-color: #cc0000;
+}
+.app > .content > .wrapper > .sidebar > .list > .item > .footer > .action.update {
+  background-color: #cc7a00;
+}
+.app > .content > .wrapper > .sidebar > .list > .item > .footer > .action:disabled {
+  opacity: 0.5;
 }
 .app > .content > .wrapper > .console {
   flex: 1;

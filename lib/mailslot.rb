@@ -1,7 +1,16 @@
+# this file is the core IPC method of rrnide
+# the Mailslot API supports any data (void*) of any length
+# so I just send marshal data as the message
+# 
+# the rgss/mailslot.rb nearly does the same thing
+
 require 'fiddle'
 require 'fiddle/types'
 require 'fiddle/import'
 
+# SlotServer.read #=> obj or nil if fail
+# SlotServer.write obj #=> true or false if fail
+# SlotServer.xxx *args #=> same as #write([:xxx, *args])
 class Mailslot
   DLL = File.expand_path 'lib/mailslot.dll'
   SLOT_GAME   = "\\\\.\\mailslot\\rgss_game"
