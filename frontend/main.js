@@ -247,6 +247,7 @@ function dirtyAuthors(meta) {
 }
 
 async function installPlugin(file) {
+    while (S.path == null) await delay(50);
     if (await axios.post("/install", [file, S.path])) {
         await delay(50);
         $("#plugin_refresh").click();
@@ -254,6 +255,7 @@ async function installPlugin(file) {
 }
 
 async function uninstallPlugin(destfile) {
+    while (S.path == null) await delay(50);
     if (await axios.post("/uninstall", [destfile, S.path])) {
         await delay(50);
         $("#plugin_refresh").click();
@@ -261,6 +263,7 @@ async function uninstallPlugin(destfile) {
 }
 
 async function updatePlugin(file) {
+    while (S.path == null) await delay(50);
     if (await axios.post("/install", [file, S.path])) {
         await delay(50);
         $("#plugin_refresh").click();

@@ -109,6 +109,8 @@ def print_error e
   end
 end
 
+MAILSLOT_BINDING = TOPLEVEL_BINDING.dup
+
 class << Graphics
   alias _update_without_mailslot update
   def update
@@ -118,7 +120,7 @@ class << Graphics
     when :eval
       text, id = args
       begin
-        value = eval(text.force_encoding('utf-8'), TOPLEVEL_BINDING)
+        value = eval(text.force_encoding('utf-8'), MAILSLOT_BINDING)
         SlotClient.return value, id
       rescue Exception => e
         print_error e
